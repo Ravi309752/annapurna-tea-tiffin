@@ -1,0 +1,227 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annapurna Tea & Tiffins</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#fffaf2;color:#30251d}
+header{background:#79351f;color:white;padding:20px;text-align:center}
+header h1{margin:0;font-size:27px}
+header p{margin:8px 0 0}
+nav{display:flex;justify-content:center;gap:20px;padding:14px;background:#f3e1c8}
+nav a{color:#79351f;text-decoration:none;font-weight:bold}
+main{max-width:1100px;margin:auto;padding:20px}
+h2{color:#79351f}
+.menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.card{background:white;border:1px solid #ead8c4;border-radius:12px;padding:16px}
+.card h3{margin:8px 0}
+.price{font-weight:bold;color:#79351f}
+button{background:#79351f;color:white;border:0;border-radius:7px;padding:10px 14px;cursor:pointer}
+button:hover{background:#542414}
+input,select{padding:10px;border:1px solid #d8c4b0;border-radius:6px;width:100%;margin:6px 0 12px}
+section{margin:28px 0}
+.cart-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #eee}
+.total{font-size:20px;font-weight:bold}
+.hidden{display:none}
+.admin{background:#f3e1c8;padding:18px;border-radius:12px}
+small{color:#735c4b}
+</style>
+</head>
+<body>
+
+<header>
+<h1>ANNAPURNA TEA & TIFFINS</h1>
+<p>Fresh food • Great taste • Easy ordering</p>
+</header>
+
+<nav>
+<a href="#menu">Menu</a>
+<a href="#cart">My Cart</a>
+<a href="#admin">Admin</a>
+</nav>
+
+<main>
+<section id="menu">
+<h2>Our Menu</h2>
+<p>Select your favourite tiffins and tea.</p>
+<div class="menu" id="menuItems"></div>
+</section>
+
+<section id="cart">
+<h2>Your Order</h2>
+<div id="cartItems">Your cart is empty.</div>
+<p class="total">Total: ₹<span id="total">0</span></p>
+
+<label for="customer">Customer name</label>
+<input id="customer" placeholder="Enter your name">
+
+<label for="table">Table number</label>
+<input id="table" type="number" min="1" placeholder="Enter table number">
+
+<label for="payment">Payment method</label>
+<select id="payment">
+<option value="Pay at table">Pay at table (Cash / UPI)</option>
+<option value="Online payment">Pay online (UPI / Gateway)</option>
+</select>
+
+<button onclick="placeOrder()">Place Order</button>
+<p id="message"></p>
+</section>
+
+<section id="admin">
+<h2>Hotel Admin Dashboard</h2>
+<div class="admin">
+<p>View customer orders and update their status.</p>
+<button onclick="showOrders()">View Orders</button>
+<div id="orders"></div>
+</div>
+</section>
+</main>
+
+<script>
+const menu = [
+ {id:1,name:"Idli (2 pieces)",price:40},
+ {id:2,name:"Plain Dosa",price:50},
+ {id:3,name:"Masala Dosa",price:80},
+ {id:4,name:"Vada (2 pieces)",price:40},
+ {id:5,name:"Upma",price:45},
+ {id:6,name:"Puri (2 pieces)",price:60},
+ {id:7,name:"Onion Dosa",price:70},
+ {id:8,name:"Tea",price:15},
+ {id:9,name:"Coffee",price:20}
+];
+
+let cart = [];
+
+function renderMenu(){
+ const container = document.getElementById("menuItems");
+ container.innerHTML = menu.map(item => `
+   <div class="card">
+     <h3>${item.name}</h3>
+     <p class="price">₹${item.price}</p>
+     <button onclick="addToCart(${item.id})">Add to Cart</button>
+   </div>
+ `).join("");
+}
+
+function addToCart(id){
+ const item = menu.find(x => x.id === id);
+ const existing = cart.find(x => x.id === id);
+ if(existing) existing.qty++;
+ else cart.push({...item,qty:1});
+ renderCart();
+}
+
+function renderCart(){
+ const container = document.getElementById("cartItems");
+ if(cart.length === 0){
+   container.innerHTML = "Your cart is empty.";
+ } else {
+   container.innerHTML = cart.map(item => `
+     <div class="cart-row">
+       <span>${item.name} × ${item.qty}</span>
+       <span>
+         ₹${item.price * item.qty}
+         <button onclick="removeItem(${item.id})">−</button>
+       </span>
+     </div>
+   `).join("");
+ }
+ document.getElementById("total").textContent =
+   cart.reduce((sum,item)=>sum+item.price*item.qty,0);
+}
+
+function removeItem(id){
+ const item = cart.find(x=>x.id===id);
+ if(item){
+   item.qty--;
+   if(item.qty<=0) cart=cart.filter(x=>x.id!==id);
+ }
+ renderCart();
+}
+
+function placeOrder(){
+ if(cart.length===0){
+   alert("Please add food items to your cart.");
+   return;
+ }
+
+ const name=document.getElementById("customer").value.trim();
+ const table=document.getElementById("table").value;
+ const payment=document.getElementById("payment").value;
+
+ if(!name || !table){
+   alert("Please enter your name and table number.");
+   return;
+ }
+
+ const order={
+   id:Date.now(),
+   name,
+   table,
+   payment,
+   items:cart.map(x=>({...x})),
+   total:cart.reduce((sum,x)=>sum+x.price*x.qty,0),
+   status:"Received"
+ };
+
+ const orders=JSON.parse(localStorage.getItem("orders")||"[]");
+ orders.push(order);
+ localStorage.setItem("orders",JSON.stringify(orders));
+
+ document.getElementById("message").textContent =
+   "Order placed successfully! Order ID: "+order.id+
+   ". Payment: "+payment+".";
+ cart=[];
+ renderCart();
+}
+
+function showOrders(){
+ const orders=JSON.parse(localStorage.getItem("orders")||"[]");
+ const container=document.getElementById("orders");
+
+ if(orders.length===0){
+   container.innerHTML="<p>No orders yet.</p>";
+   return;
+ }
+
+ container.innerHTML=orders.map(order=>`
+   <div class="card" style="margin-top:12px">
+     <h3>Order #${order.id}</h3>
+     <p>Customer: ${order.name}</p>
+     <p>Table: ${order.table}</p>
+     <p>Items: ${order.items.map(x=>x.name+" × "+x.qty).join(", ")}</p>
+     <p>Total: ₹${order.total}</p>
+     <p>Payment: ${order.payment}</p>
+     <p>Status: <b>${order.status}</b></p>
+     <button onclick="updateStatus(${order.id},'Preparing')">Preparing</button>
+     <button onclick="updateStatus(${order.id},'Ready')">Ready</button>
+     <button onclick="updateStatus(${order.id},'Served')">Served</button>
+   </div>
+ `).join("");
+}
+
+function updateStatus(id,status){
+ const orders=JSON.parse(localStorage.getItem("orders")||"[]");
+ const order=orders.find(x=>x.id===id);
+ if(order){
+   order.status=status;
+   localStorage.setItem("orders",JSON.stringify(orders));
+   showOrders();
+ }
+}
+
+renderMenu();
+renderCart();
+
+// Allow table QR codes to open the website with a table number.
+// Example: index.html?table=3
+const tableFromQR=new URLSearchParams(location.search).get("table");
+if(tableFromQR) document.getElementById("table").value=tableFromQR;
+</script>
+
+</body>
+</html>
