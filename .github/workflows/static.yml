@@ -1,43 +1,174 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
 
-on:
-  # Runs on pushes targeting the default branch
-  push:
-    branches: ["main"]
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annapurna - Admin Dashboard</title>
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #fffaf2;
+  color: #30251d;
+}
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+header {
+  background: #79351f;
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+main {
+  max-width: 1000px;
+  margin: auto;
+  padding: 20px;
+}
 
-jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # Upload entire repository
-          path: '.'
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+h2 {
+  color: #79351f;
+}
+
+.card {
+  background: white;
+  border: 1px solid #ead8c4;
+  border-radius: 10px;
+  padding: 16px;
+  margin: 15px 0;
+}
+
+button {
+  background: #79351f;
+  color: white;
+  border: 0;
+  padding: 10px 14px;
+  margin: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #542414;
+}
+
+input {
+  padding: 10px;
+  margin: 5px;
+  border: 1px solid #d8c4b0;
+  border-radius: 6px;
+}
+
+.notice {
+  background: #fff0d5;
+  padding: 12px;
+  border-radius: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>ANNAPURNA TEA & TIFFINS</h1>
+  <p>Hotel Admin Dashboard</p>
+</header>
+
+<main>
+
+<h2>Incoming Orders</h2>
+
+<p class="notice">
+  This dashboard displays orders saved in this browser.
+</p>
+
+<button onclick="showOrders()">Refresh Orders</button>
+
+<div id="orders"></div>
+
+</main>
+
+<script>
+
+function showOrders() {
+
+  const orders = JSON.parse(
+    localStorage.getItem("orders") || "[]"
+  );
+
+  const container = document.getElementById("orders");
+
+  if (orders.length === 0) {
+    container.innerHTML = "<p>No orders received yet.</p>";
+    return;
+  }
+
+  container.innerHTML = orders.map(order => `
+
+    <div class="card">
+
+      <h3>Order #${order.id}</h3>
+
+      <p><strong>Customer:</strong> ${order.name}</p>
+
+      <p><strong>Table:</strong> ${order.table}</p>
+
+      <p><strong>Items:</strong>
+        ${order.items.map(item =>
+          item.name + " × " + item.qty
+        ).join(", ")}
+      </p>
+
+      <p><strong>Total:</strong> ₹${order.total}</p>
+
+      <p><strong>Payment:</strong> ${order.payment}</p>
+
+      <p><strong>Status:</strong> ${order.status}</p>
+
+      <button onclick="updateStatus(${order.id}, 'Preparing')">
+        Preparing
+      </button>
+
+      <button onclick="updateStatus(${order.id}, 'Ready')">
+        Ready
+      </button>
+
+      <button onclick="updateStatus(${order.id}, 'Served')">
+        Served
+      </button>
+
+    </div>
+
+  `).join("");
+
+}
+
+function updateStatus(id, status) {
+
+  const orders = JSON.parse(
+    localStorage.getItem("orders") || "[]"
+  );
+
+  const order = orders.find(item => item.id === id);
+
+  if (order) {
+
+    order.status = status;
+
+    localStorage.setItem(
+      "orders",
+      JSON.stringify(orders)
+    );
+
+    showOrders();
+  }
+
+}
+
+showOrders();
+
+</script>
+
+</body>
+</html>
